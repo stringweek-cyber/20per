@@ -20,14 +20,18 @@
     </header>
 
     <div class="grid md:grid-cols-2 gap-6 mb-10">
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div id="dropzone1" class="bg-white p-6 rounded-2xl shadow-sm border-2 border-dashed border-slate-200 transition-colors"
+           ondragover="handleDragOver(event,'dropzone1')" ondragleave="handleDragLeave(event,'dropzone1')" ondrop="handleDrop(event,'dropzone1','file1')">
         <label class="block mb-3 font-semibold text-slate-700">1차 파일 업로드 (한셀/ Excel)</label>
         <input type="file" id="file1" accept=".csv, .xlsx, .xls" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-semibold hover:file:bg-blue-100 cursor-pointer">
+        <p class="text-xs text-slate-400 mt-2">파일을 이 영역에 끌어다 놓아도 됩니다</p>
         <p id="status1" class="text-xs mt-2"></p>
       </div>
-      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+      <div id="dropzone2" class="bg-white p-6 rounded-2xl shadow-sm border-2 border-dashed border-slate-200 transition-colors"
+           ondragover="handleDragOver(event,'dropzone2')" ondragleave="handleDragLeave(event,'dropzone2')" ondrop="handleDrop(event,'dropzone2','file2')">
         <label class="block mb-3 font-semibold text-slate-700">2차 파일 업로드 (한셀/ Excel)</label>
         <input type="file" id="file2" accept=".csv, .xlsx, .xls" class="w-full text-sm text-slate-600 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 file:font-semibold hover:file:bg-blue-100 cursor-pointer">
+        <p class="text-xs text-slate-400 mt-2">파일을 이 영역에 끌어다 놓아도 됩니다</p>
         <p id="status2" class="text-xs mt-2"></p>
       </div>
     </div>
@@ -190,6 +194,32 @@ function sheetToObjects(sheet) {
 
 document.getElementById('file1').onchange = (e) => { if(e.target.files[0]) processFile(e.target.files[0], (d)=>{data1=d; checkAll();}, 'status1'); };
 document.getElementById('file2').onchange = (e) => { if(e.target.files[0]) processFile(e.target.files[0], (d)=>{data2=d; checkAll();}, 'status2'); };
+
+function handleDragOver(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.add('border-blue-400', 'bg-blue-50');
+}
+
+function handleDragLeave(e, zoneId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.remove('border-blue-400', 'bg-blue-50');
+}
+
+function handleDrop(e, zoneId, inputId) {
+  e.preventDefault();
+  document.getElementById(zoneId).classList.remove('border-blue-400', 'bg-blue-50');
+  const files = e.dataTransfer.files;
+  if (!files || files.length === 0) return;
+  const input = document.getElementById(inputId);
+  const dt = new DataTransfer();
+  dt.items.add(files[0]);
+  input.files = dt.files;
+  input.dispatchEvent(new Event('change'));
+}
+
+// 드롭존 밖에 파일을 놓으면 브라우저가 파일을 열어버리는 것을 방지
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => e.preventDefault());
 
 function showError(msg) {
   const box = document.getElementById('errorBox');
