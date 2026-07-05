@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>성적 상위 20% 분석 대시보드</title>
+<title>성적 상위 20% 학생 분석</title>
 <script src="https://cdn.tailwindcss.com"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
 <style>
@@ -16,38 +16,95 @@
   <div class="max-w-6xl mx-auto">
     <header class="mb-10">
       <h1 class="text-3xl font-bold text-blue-900 tracking-tight">성적 상위 20% 학생 분석</h1>
-      <p class="text-slate-500 mt-1">파일을 아래 영역에 드래그하거나 클릭하여 업로드하세요.</p>
+      <p class="text-slate-500 mt-1">자료를 업로드하면 상위 20% 학생을 자동으로 분석합니다.</p>
     </header>
 
     <div class="grid md:grid-cols-2 gap-6 mb-10">
       <div id="dropzone1" class="bg-white p-8 rounded-2xl shadow-sm border-2 border-dashed border-slate-300 transition-all text-center"
            ondragover="handleDrag(event, true, 'dropzone1')" ondragleave="handleDrag(event, false, 'dropzone1')" ondrop="handleDrop(event, 'dropzone1', 'file1')">
-        <label class="block mb-2 font-semibold text-slate-700 cursor-pointer">1차 파일 (Excel/CSV)</label>
+        <label class="block mb-2 font-semibold text-slate-700">1차 파일 업로드 (한셀/ Excel)</label>
         <input type="file" id="file1" accept=".csv, .xlsx, .xls" class="hidden">
-        <div onclick="document.getElementById('file1').click()" class="cursor-pointer py-4 text-sm text-blue-600 font-medium hover:text-blue-800">파일 선택 또는 드래그</div>
-        <p id="status1" class="text-xs mt-2 text-slate-400"></p>
+        <div onclick="document.getElementById('file1').click()" class="cursor-pointer py-4 text-blue-600 font-medium">파일 선택 또는 드래그</div>
+        <p id="status1" class="text-xs mt-2"></p>
       </div>
       <div id="dropzone2" class="bg-white p-8 rounded-2xl shadow-sm border-2 border-dashed border-slate-300 transition-all text-center"
            ondragover="handleDrag(event, true, 'dropzone2')" ondragleave="handleDrag(event, false, 'dropzone2')" ondrop="handleDrop(event, 'dropzone2', 'file2')">
-        <label class="block mb-2 font-semibold text-slate-700 cursor-pointer">2차 파일 (Excel/CSV)</label>
+        <label class="block mb-2 font-semibold text-slate-700">2차 파일 업로드 (한셀/ Excel)</label>
         <input type="file" id="file2" accept=".csv, .xlsx, .xls" class="hidden">
-        <div onclick="document.getElementById('file2').click()" class="cursor-pointer py-4 text-sm text-blue-600 font-medium hover:text-blue-800">파일 선택 또는 드래그</div>
-        <p id="status2" class="text-xs mt-2 text-slate-400"></p>
+        <div onclick="document.getElementById('file2').click()" class="cursor-pointer py-4 text-blue-600 font-medium">파일 선택 또는 드래그</div>
+        <p id="status2" class="text-xs mt-2"></p>
       </div>
     </div>
 
+    <div id="errorBox" class="hidden mb-6 p-4 rounded-xl bg-red-50 border border-red-200 text-red-700 text-sm"></div>
+
     <div id="results" class="hidden space-y-8">
-      <!-- 결과 테이블 영역 -->
+
+      <div class="grid md:grid-cols-2 gap-6">
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <h2 class="text-lg font-bold text-slate-800 mb-4">1차 성적순 정렬 (상위 20% 강조)</h2>
+          <div class="overflow-x-auto max-h-[480px] overflow-y-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-blue-50 sticky top-0">
+                <tr><th class="p-2">순위</th><th class="p-2">성명</th><th class="p-2">점수</th><th class="p-2">비고</th></tr>
+              </thead>
+              <tbody id="table1"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+          <h2 class="text-lg font-bold text-slate-800 mb-4">2차 성적순 정렬 (상위 20% 강조)</h2>
+          <div class="overflow-x-auto max-h-[480px] overflow-y-auto">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-blue-50 sticky top-0">
+                <tr><th class="p-2">순위</th><th class="p-2">성명</th><th class="p-2">점수</th><th class="p-2">비고</th></tr>
+              </thead>
+              <tbody id="table2"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <div class="flex justify-between items-center mb-4">
+          <h2 class="text-lg font-bold text-slate-800">🌟 두 차 모두 상위 20% 유지 학생 (성적순)</h2>
+          <button onclick="downloadOverlap()" class="bg-blue-800 text-white text-sm px-3 py-1.5 rounded-lg hover:bg-blue-900 transition">명단 다운로드 (20~30% 포함)</button>
+        </div>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-blue-50">
+              <tr><th class="p-2">순위</th><th class="p-2">성명</th><th class="p-2">1차 점수</th><th class="p-2">2차 점수</th><th class="p-2">평균</th></tr>
+            </thead>
+            <tbody id="overlapTop"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
+        <h2 class="text-lg font-bold text-slate-800 mb-4">두 차 모두 20~30% 구간 학생 (성적순)</h2>
+        <div class="overflow-x-auto">
+          <table class="w-full text-left text-sm">
+            <thead class="bg-blue-50">
+              <tr><th class="p-2">순위</th><th class="p-2">성명</th><th class="p-2">1차 점수</th><th class="p-2">2차 점수</th><th class="p-2">평균</th></tr>
+            </thead>
+            <tbody id="overlapBand"></tbody>
+          </table>
+        </div>
+      </div>
+
     </div>
   </div>
 
 <script>
 let data1 = [], data2 = [];
+let top1 = [], top2 = [], band1 = [], band2 = [];
+let overlapTop = [], overlapBand = [];
 
-// 드래그 상태 관리
-function handleDrag(e, isOver, id) {
+// ---------- 드래그앤드롭 ----------
+function handleDrag(e, isOver, zoneId) {
   e.preventDefault();
-  const el = document.getElementById(id);
+  const el = document.getElementById(zoneId);
   isOver ? el.classList.add('drag-over') : el.classList.remove('drag-over');
 }
 
@@ -55,32 +112,269 @@ function handleDrop(e, zoneId, inputId) {
   e.preventDefault();
   document.getElementById(zoneId).classList.remove('drag-over');
   const files = e.dataTransfer.files;
-  if (files.length > 0) {
-    const input = document.getElementById(inputId);
-    input.files = files;
-    input.dispatchEvent(new Event('change'));
-  }
+  if (!files || files.length === 0) return;
+  const input = document.getElementById(inputId);
+  const dt = new DataTransfer();
+  dt.items.add(files[0]);
+  input.files = dt.files;
+  input.dispatchEvent(new Event('change'));
 }
 
+window.addEventListener('dragover', (e) => e.preventDefault());
+window.addEventListener('drop', (e) => e.preventDefault());
+
+// file1/file2 input의 change 이벤트에 직접 콜백을 연결
+// (window[varName] 방식은 let으로 선언된 변수와 연결되지 않는 버그가 있어 사용하지 않음)
+document.getElementById('file1').onchange = (e) => { if (e.target.files[0]) processFile(e.target.files[0], (d) => { data1 = d; checkAll(); }, 'status1'); };
+document.getElementById('file2').onchange = (e) => { if (e.target.files[0]) processFile(e.target.files[0], (d) => { data2 = d; checkAll(); }, 'status2'); };
+
+// ---------- 로딩 표시 ----------
+function setLoading(statusId) {
+  const el = document.getElementById(statusId);
+  el.textContent = '⏳ 불러오는 중입니다... 잠시만 기다려 주세요.';
+  el.className = 'text-xs mt-2 text-red-600 font-bold animate-pulse';
+}
+function setLoaded(statusId, count) {
+  const el = document.getElementById(statusId);
+  el.textContent = `✅ ${count}명 로드됨`;
+  el.className = 'text-xs mt-2 text-slate-400';
+}
+
+function showError(msg) {
+  const box = document.getElementById('errorBox');
+  box.textContent = msg;
+  box.classList.remove('hidden');
+}
+function clearError() {
+  document.getElementById('errorBox').classList.add('hidden');
+}
+
+// ---------- 파일 읽기 ----------
 function processFile(file, callback, statusId) {
+  setLoading(statusId);
   const reader = new FileReader();
   reader.onload = (e) => {
-    const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
-    const json = XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]]);
-    document.getElementById(statusId).textContent = `✅ ${file.name} (${json.length}행 로드됨)`;
-    callback(json);
+    setTimeout(() => {
+      try {
+        const wb = XLSX.read(new Uint8Array(e.target.result), {type: 'array'});
+        const sheet = wb.Sheets[wb.SheetNames[0]];
+        const json = sheetToObjects(sheet);
+        setLoaded(statusId, json.length);
+        callback(json);
+      } catch (err) {
+        showError('파일을 읽는 중 오류가 발생했습니다: ' + err.message);
+        setLoaded(statusId, 0);
+      }
+    }, 30);
   };
   reader.readAsArrayBuffer(file);
 }
 
-document.getElementById('file1').onchange = (e) => { if(e.target.files[0]) processFile(e.target.files[0], (d)=>{data1=d; checkAll();}, 'status1'); };
-document.getElementById('file2').onchange = (e) => { if(e.target.files[0]) processFile(e.target.files[0], (d)=>{data2=d; checkAll();}, 'status2'); };
+// 성적표 상단에 제목/과목/응시 정보 등 안내 행이 여러 줄 있어도
+// "성명"과 "점수"가 함께 들어있는 실제 헤더 행을 찾아 그 아래부터 데이터로 사용
+function sheetToObjects(sheet) {
+  const raw = XLSX.utils.sheet_to_json(sheet, {header: 1, defval: ''});
 
-function checkAll() {
-  if (data1.length > 0 && data2.length > 0) {
-    document.getElementById('results').classList.remove('hidden');
-    // 기존 분석 로직 연동
+  let headerRowIdx = -1;
+  for (let i = 0; i < raw.length; i++) {
+    const row = raw[i].map(c => String(c).trim());
+    const hasName = row.some(c => /성명|이름/.test(c));
+    const hasScore = row.some(c => /점수|성적/.test(c));
+    if (hasName && hasScore) { headerRowIdx = i; break; }
   }
+
+  if (headerRowIdx === -1) {
+    return XLSX.utils.sheet_to_json(sheet, {defval: ''});
+  }
+
+  const headers = raw[headerRowIdx].map(c => String(c).trim());
+  const dataRows = raw.slice(headerRowIdx + 1);
+
+  return dataRows
+    .map(r => {
+      const obj = {};
+      headers.forEach((h, idx) => { if (h) obj[h] = r[idx] !== undefined ? r[idx] : ''; });
+      return obj;
+    })
+    .filter(obj => Object.values(obj).some(v => String(v).trim() !== ''));
+}
+
+// ---------- 컬럼 자동 인식 ----------
+function detectColumns(data) {
+  if (!data.length) return {classKey: null, numKey: null, comboKey: null, nameOnlyKey: null, scoreKey: null};
+  const headers = Object.keys(data[0]);
+
+  const comboKey = headers.find(h => /반.*번호|반\/번호/.test(h));
+  const classKey = comboKey ? null : headers.find(h => /^반$|학반/.test(h));
+  const numKey = comboKey ? null : headers.find(h => /번호/.test(h));
+  const nameOnlyKey = headers.find(h => /이름|성명/.test(h));
+
+  let scoreKey = headers.find(h => /점수|성적/.test(h) && !/총점|평균/.test(h));
+
+  if (!scoreKey) {
+    const exclude = new Set([classKey, numKey, comboKey, nameOnlyKey].filter(Boolean));
+    let best = null, bestCount = -1;
+    headers.forEach(h => {
+      if (exclude.has(h)) return;
+      const count = data.filter(d => d[h] !== '' && !isNaN(parseFloat(d[h]))).length;
+      if (count > bestCount) { bestCount = count; best = h; }
+    });
+    scoreKey = best;
+  }
+
+  return {classKey, numKey, comboKey, nameOnlyKey, scoreKey};
+}
+
+const SUMMARY_PATTERN = /총점|응시생|평균|표준편차|등수|합계|인원|최고점|최저점/;
+
+function buildSorted(data) {
+  const cols = detectColumns(data);
+  const scoreKey = cols.scoreKey;
+  if (!scoreKey) return {sorted: [], top: []};
+
+  const cleaned = data.map(d => {
+    let name = null;
+    let prefix = '';
+
+    if (cols.comboKey) {
+      const raw = String(d[cols.comboKey]).trim();
+      const m = raw.match(/(\d+)\s*[/\-]\s*(\d+)/);
+      if (m) prefix = `${m[1]}-${m[2]}`;
+    } else if (cols.classKey || cols.numKey) {
+      const cls = cols.classKey ? String(d[cols.classKey]).trim() : '';
+      const num = cols.numKey ? String(d[cols.numKey]).trim() : '';
+      const validClass = !cols.classKey || /^\d+$/.test(cls);
+      const validNum = !cols.numKey || /^\d+$/.test(num);
+      if (validClass && validNum) prefix = [cls, num].filter(Boolean).join('-');
+    }
+
+    if (cols.nameOnlyKey) {
+      const nm = String(d[cols.nameOnlyKey]).trim();
+      const needsPrefix = cols.comboKey || cols.classKey || cols.numKey;
+      if (nm && !SUMMARY_PATTERN.test(nm) && (!needsPrefix || prefix)) {
+        name = prefix ? `${prefix} ${nm}` : nm;
+      }
+    }
+
+    const score = parseFloat(d[scoreKey]);
+    return {name, score};
+  }).filter(d => d.name && !isNaN(d.score));
+
+  const sorted = cleaned.slice().sort((a, b) => b.score - a.score);
+  const cutoff = Math.max(1, Math.ceil(sorted.length * 0.2));
+  const top = sorted.slice(0, cutoff);
+  return {sorted, top, cutoffCount: cutoff};
+}
+
+function getBand(sorted, fromRatio, toRatio) {
+  const fromIdx = Math.ceil(sorted.length * fromRatio);
+  const toIdx = Math.ceil(sorted.length * toRatio);
+  return sorted.slice(fromIdx, toIdx);
+}
+
+function buildOverlapTable(arr1, arr2) {
+  const map1 = new Map(arr1.map(d => [d.name, d.score]));
+  const map2 = new Map(arr2.map(d => [d.name, d.score]));
+  const names = [...map1.keys()].filter(n => map2.has(n));
+  const result = names.map(n => {
+    const score1 = map1.get(n), score2 = map2.get(n);
+    return {name: n, score1, score2, avg: (score1 + score2) / 2};
+  });
+  result.sort((a, b) => b.avg - a.avg);
+  return result;
+}
+
+// ---------- 분석 실행 ----------
+function checkAll() {
+  if (data1.length === 0 || data2.length === 0) return;
+  clearError();
+
+  const r1 = buildSorted(data1);
+  const r2 = buildSorted(data2);
+
+  if (r1.sorted.length === 0 || r2.sorted.length === 0) {
+    showError('성명 또는 점수 열을 인식하지 못했습니다. 엑셀 파일에 "성명(이름)"과 "점수(성적)" 열이 있는지 확인해 주세요.');
+    document.getElementById('results').classList.add('hidden');
+    return;
+  }
+
+  top1 = r1.top;
+  top2 = r2.top;
+  band1 = getBand(r1.sorted, 0.2, 0.3);
+  band2 = getBand(r2.sorted, 0.2, 0.3);
+
+  const top1Names = new Set(top1.map(d => d.name));
+  const top2Names = new Set(top2.map(d => d.name));
+
+  overlapTop = buildOverlapTable(top1, top2);
+  overlapBand = buildOverlapTable(band1, band2);
+
+  renderTable('table1', r1.sorted, top1Names, top2Names);
+  renderTable('table2', r2.sorted, top2Names, top1Names);
+  renderOverlapTable('overlapTop', overlapTop);
+  renderOverlapTable('overlapBand', overlapBand);
+
+  document.getElementById('results').classList.remove('hidden');
+}
+
+function renderTable(tbodyId, sorted, ownTopSet, otherTopSet) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+  sorted.forEach((d, i) => {
+    const isTop = ownTopSet.has(d.name);
+    const isBoth = isTop && otherTopSet.has(d.name);
+    const tr = document.createElement('tr');
+    tr.className = isBoth ? 'bg-blue-100 font-bold' : (isTop ? 'bg-blue-50' : '');
+    tr.innerHTML = `
+      <td class="p-2">${i + 1}</td>
+      <td class="p-2">${d.name}</td>
+      <td class="p-2">${d.score}</td>
+      <td class="p-2">${isBoth ? '🌟 양쪽 모두 상위 20%' : (isTop ? '상위 20%' : '')}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+function renderOverlapTable(tbodyId, list) {
+  const tbody = document.getElementById(tbodyId);
+  tbody.innerHTML = '';
+  if (list.length === 0) {
+    tbody.innerHTML = '<tr><td class="p-2 text-slate-400" colspan="5">해당하는 학생이 없습니다.</td></tr>';
+    return;
+  }
+  list.forEach((d, i) => {
+    const tr = document.createElement('tr');
+    tr.className = i % 2 === 0 ? 'bg-blue-50/50' : '';
+    tr.innerHTML = `
+      <td class="p-2">${i + 1}</td>
+      <td class="p-2 font-semibold">${d.name}</td>
+      <td class="p-2">${d.score1}</td>
+      <td class="p-2">${d.score2}</td>
+      <td class="p-2">${d.avg.toFixed(1)}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ---------- 다운로드 ----------
+function toCSV(rows) {
+  return '\ufeff' + rows.map(r => r.map(v => `"${String(v).replace(/"/g,'""')}"`).join(',')).join('\n');
+}
+
+function triggerDownload(csv, filename) {
+  const blob = new Blob([csv], {type: 'text/csv;charset=utf-8;'});
+  const link = document.createElement('a');
+  link.href = URL.createObjectURL(blob);
+  link.download = filename;
+  link.click();
+}
+
+function downloadOverlap() {
+  if (overlapTop.length === 0 && overlapBand.length === 0) return;
+  const rows = [['구분', '순위', '성명', '1차 점수', '2차 점수', '평균']];
+  overlapTop.forEach((d, i) => rows.push(['상위 20%', i + 1, d.name, d.score1, d.score2, d.avg.toFixed(1)]));
+  overlapBand.forEach((d, i) => rows.push(['20~30%', i + 1, d.name, d.score1, d.score2, d.avg.toFixed(1)]));
+  triggerDownload(toCSV(rows), '두차_상위20퍼센트_및_20~30퍼센트_공통명단.csv');
 }
 </script>
 </body>
